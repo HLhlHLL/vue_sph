@@ -1,9 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Home from '@/views/Home'
-import Login from '@/views/Login'
-import Search from '@/views/Search'
-import Register from '@/views/Register'
+import routes from './routes.js'
+import store from '@/store'
 
 Vue.use(VueRouter)
 
@@ -35,16 +33,38 @@ VueRouter.prototype.replace = function (location, resolve, reject) {
   }
 }
 
-const routes = [
-  { path: '/', redirect: '/home' },
-  { path: '/home', component: Home, meta: { show: true } },
-  { path: '/login', component: Login, meta: { show: false } },
-  { path: '/search/:keyWord', component: Search, meta: { show: true }, name: 'search' },
-  { path: '/register', component: Register, meta: { show: false } }
-]
-
 const router = new VueRouter({
-  routes
+  routes,
+  // 配置路由跳转后的滚动行为
+  scrollBehavior(to, from, savePosition) {
+    return { y: 0 }
+  }
+})
+
+router.beforeEach(async (to, from, next) => {
+  const token = window.localStorage.getItem('token')
+  if (token) {
+    if (to.path === '/login') {
+      next('/home')
+    } else {
+      try {
+        !window.sessionStorage.getItem('userInfo') && (await store.dispatch('getUserInfo'))
+      } catch (error) {
+        // token 失效，清空用户信息
+        await store.dispatch('logOut')
+        next('/login')
+        alert('身份已过期，请重新登陆！')
+      }
+      next()
+    }
+  } else {
+    const toPath = to.path
+    if (toPath.indexOf('/trade') !== -1 || toPath.indexOf('/center') !== -1 || toPath.indexOf('/pay') !== -1) {
+      next('/login?redirect=' + toPath)
+    } else {
+      next()
+    }
+  }
 })
 
 export default router

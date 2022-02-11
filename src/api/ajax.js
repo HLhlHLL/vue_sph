@@ -1,6 +1,7 @@
 import axios from 'axios'
 import nprogress from 'nprogress'
 import 'nprogress/nprogress.css'
+import store from '@/store'
 
 const requests = axios.create({
   baseURL: '/api',
@@ -10,6 +11,8 @@ const requests = axios.create({
 // 请求拦截器
 requests.interceptors.request.use((config) => {
   nprogress.start()
+  if (store.state.shopcart.uuid_token) config.headers.userTempId = store.state.shopcart.uuid_token
+  if (window.localStorage.getItem('token')) config.headers.token = window.localStorage.getItem('token')
   return config
 })
 
